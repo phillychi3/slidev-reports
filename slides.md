@@ -237,6 +237,19 @@ image: "https://i.pinimg.com/564x/68/65/aa/6865aa43ea77c49773f948d71e428cf8.jpg"
 圖片內容提取與分析
 
 
+---
+layout: image-right
+image: https://camo.githubusercontent.com/0df906f7255c9bc0ca43ef37816a109d5421d104e76e5f21ece5002c869f0560/68747470733a2f2f63646e2e6a7364656c6976722e6e65742f67682f52696d6f4368616e2f72696d6f6368616e2f30302e77656270
+---
+
+# 參考資料
+
+##### [【老婆探测器】一个普通的动漫角色分类模型](https://github.com/RimoChan/waifu-sensor)
+
+[Quive Secone Brain](https://github.com/QuivrHQ/quivr)
+
+[Make workflow](https://make.com)
+
 
 ---
 layout: center
