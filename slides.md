@@ -24,7 +24,7 @@ mdc: true
 preload: false
 ---
 
-# DATE STONKS
+# DATA STONKS
 
 ## 資料整理系統
 
