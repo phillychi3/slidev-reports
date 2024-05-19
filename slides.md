@@ -9,7 +9,6 @@ title: Data stonks
 info: |
   ## Data stonks
   Lazy lol
-  phillychi3 | 戚雲飛
 # apply any unocss classes to the current slide
 class: text-center
 # https://sli.dev/custom/highlighters.html
@@ -28,7 +27,7 @@ preload: false
 
 ## 資料整理系統
 
-B11123213 戚雲飛
+B111xxxxx
 
 <div class="pt-12">
   <span @click="$slidev.nav.next" class="px-2 py-1 rounded cursor-pointer" hover="bg-white bg-opacity-10">
