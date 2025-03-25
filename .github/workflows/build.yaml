@@ -32,6 +32,13 @@ jobs:
             mkdir -p ../dist/$dirname
             cp -r $dirname/dist/* ../dist/$dirname/
           done
+          echo '<!DOCTYPE html><html><head><title>Reports</title></head><body>' > ../dist/index.html
+          echo '<h1>Available Reports</h1><ul>' >> ../dist/index.html
+          for dir in */; do
+            dirname=${dir%/}
+            echo "<li><a href='./$dirname/'>$dirname</a></li>" >> ../dist/index.html
+          done
+          echo '</ul></body></html>' >> ../dist/index.html
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
