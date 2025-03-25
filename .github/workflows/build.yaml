@@ -26,6 +26,8 @@ jobs:
 
       - name: Copy report directories
         run: |
+          mkdir -p dist
+          cp CNAME dist/
           cd reports
           for dir in */; do
             dirname=${dir%/}
