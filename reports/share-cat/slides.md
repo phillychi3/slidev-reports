@@ -28,30 +28,8 @@ h1 {
   font-size: 5rem !important;
   font-weight: 600;
   letter-spacing: 2px;
-  animation: glow 1.5s ease-in-out infinite alternate;
 }
 
-@keyframes glow {
-  from {
-    text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6;
-  }
-  to {
-    text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #0073e6, 0 0 40px #0073e6;
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 1s ease-in forwards;
-}
-
-.animate-fade-in-slow {
-  animation: fadeIn 2s ease-in forwards;
-}
-
-@keyframes fadeIn {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
 </style>
 
 ---
@@ -180,7 +158,24 @@ h1 {
 
 <div class="grid grid-cols-2 gap-x-8 gap-y-6 mt-6">
   <div v-click>
-    <div class="text-2xl font-bold mb-4 text-blue-400">學生視角</div>
+    <div class="text-2xl font-bold mb-4 text-blue-400">教師視角</div>
+    <div class="space-y-4 text-xl">
+      <div class="flex items-start">
+        <div class="text-2xl mr-3">📝</div>
+        <div>輕鬆建立測驗與競賽，自動評分</div>
+      </div>
+      <div class="flex items-start">
+        <div class="text-2xl mr-3">📈</div>
+        <div>分析學生表現數據，掌握學習狀況</div>
+      </div>
+      <div class="flex items-start">
+        <div class="text-2xl mr-3">🤖</div>
+        <div>利用 AI 協助生成題目與測試案例</div>
+      </div>
+    </div>
+  </div>
+    <div v-click>
+    <div class="text-2xl font-bold mb-4 text-green-400">學生視角</div>
     <div class="space-y-4 text-xl">
       <div class="flex items-start">
         <div class="text-2xl mr-3">💻</div>
@@ -197,24 +192,6 @@ h1 {
       <div class="flex items-start">
         <div class="text-2xl mr-3">👥</div>
         <div>與同儕交流解題思路，共同成長</div>
-      </div>
-    </div>
-  </div>
-
-  <div v-click>
-    <div class="text-2xl font-bold mb-4 text-purple-400">教師視角</div>
-    <div class="space-y-4 text-xl">
-      <div class="flex items-start">
-        <div class="text-2xl mr-3">📝</div>
-        <div>輕鬆建立測驗與競賽，自動評分</div>
-      </div>
-      <div class="flex items-start">
-        <div class="text-2xl mr-3">📈</div>
-        <div>分析學生表現數據，掌握學習狀況</div>
-      </div>
-      <div class="flex items-start">
-        <div class="text-2xl mr-3">🤖</div>
-        <div>利用 AI 協助生成題目與測試案例</div>
       </div>
     </div>
   </div>
