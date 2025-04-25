@@ -28,19 +28,23 @@ jobs:
         run: |
           mkdir -p dist
           cp CNAME dist/
+          cp templates/index.html dist/
+
           cd reports
           for dir in */; do
             dirname=${dir%/}
             mkdir -p ../dist/$dirname
             cp -r $dirname/dist/* ../dist/$dirname/
+
+
+            formatted_name=$(echo $dirname | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)} 1')
+            card_html="<div class=\"report-card\"><a href=\"./$dirname/\"><h2 class=\"report-title\">$formatted_name</h2></a></div>"
+
+
+            sed -i.bak "s|<div class=\"reports-grid\" id=\"reports-list\">|<div class=\"reports-grid\" id=\"reports-list\">\n        $card_html|" ../dist/index.html
           done
-          echo '<!DOCTYPE html><html><head><title>Reports</title></head><body>' > ../dist/index.html
-          echo '<h1>Available Reports</h1><ul>' >> ../dist/index.html
-          for dir in */; do
-            dirname=${dir%/}
-            echo "<li><a href='./$dirname/'>$dirname</a></li>" >> ../dist/index.html
-          done
-          echo '</ul></body></html>' >> ../dist/index.html
+
+          find ../dist -name "*.bak" -type f -delete
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
