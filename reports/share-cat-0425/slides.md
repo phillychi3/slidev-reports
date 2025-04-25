@@ -261,3 +261,10 @@ mdc: true
 ---
 
 # 謝謝聆聽
+
+<div class="abs-br m-6 flex gap-2">
+  <a href="https://36a8-2001-b400-e78f-2d70-901-807d-9286-59b0.ngrok-free.app/" target="_blank" alt="GitHub" title="Open in GitHub"
+    class="text-xl slidev-icon-btn opacity-50 !border-none !hover:text-white">
+    <carbon-logo-github />
+  </a>
+</div>
