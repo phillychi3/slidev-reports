@@ -566,7 +566,7 @@ class: py-10
 ## 實際效果
 
 
-<img src="./2025-11-19 062250.png" class=" h-full mx-auto ">
+<img src="./2025-11-19-062250.png" class=" h-full mx-auto ">
 
 
 ---
