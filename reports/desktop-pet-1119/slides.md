@@ -328,7 +328,7 @@ class: py-10
 
 ---
 layout: image
-image: /ygg.png
+image: ygg.png
 ---
 
 <div class="flex items-center justify-center h-full">
