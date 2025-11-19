@@ -328,7 +328,7 @@ class: py-10
 
 ---
 layout: image
-image: ./ygg.png
+image: /ygg.png
 ---
 
 <div class="flex items-center justify-center h-full">
@@ -566,7 +566,7 @@ class: py-10
 ## 實際效果
 
 
-<img src="./2025-11-19-062250.png" class=" h-full mx-auto ">
+<img src="/062250.png" class=" h-full mx-auto ">
 
 
 ---
@@ -608,7 +608,7 @@ class: py-10
 
 ## 還有哪些部分正在進行
 
-<img src="./ailaunacher.png" class=" h-full mx-auto ">
+<img src="/ailaunacher.png" class=" h-full mx-auto ">
 
 
 ---
