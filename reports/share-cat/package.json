@@ -9,11 +9,11 @@
   },
   "dependencies": {
     "@iconify-json/logos": "^1.2.11",
-    "@slidev/cli": "^51.8.2",
+    "@slidev/cli": "^53.0.0",
     "@slidev/theme-default": "latest",
     "@slidev/theme-seriph": "latest",
+    "vue": "^3.5.33",
     "add": "^2.0.6",
-    "pnpm": "^10.33.0",
-    "vue": "^3.5.32"
+    "pnpm": "^10.33.0"
   }
 }

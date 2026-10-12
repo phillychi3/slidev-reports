@@ -3,16 +3,16 @@
     "type": "module",
     "version": "0.0.1",
     "private": true,
-    "packageManager": "pnpm@9.15.9",
+    "packageManager": "pnpm@10.33.0",
     "scripts": {
         "build": "pnpm -r --filter=./reports/* run build"
     },
     "devDependencies": {
         "@ant-design/icons": "^5.6.1",
         "@iconify-json/logos": "^1.2.11",
-        "@slidev/cli": "^51.8.2",
+        "@slidev/cli": "^53.0.0",
         "@slidev/theme-default": "latest",
         "@slidev/theme-seriph": "latest",
-        "vue": "^3.5.32"
+        "vue": "^3.5.33"
     }
 }

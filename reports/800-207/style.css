@@ -1,0 +1,98 @@
+:root {
+  --zt-bg: #ffffff;
+  --zt-fg: #1f2937;
+  --zt-muted: #6b7280;
+  --zt-line: #9ca3af;
+  --zt-pep: #d97706;
+  --zt-ctrl: #0284c7;
+  --zt-pip: #7c3aed;
+  --zt-idp: #059669;
+  --zt-res: #475569;
+  --zt-allow: #16a34a;
+  --zt-deny: #e11d48;
+}
+
+html.dark {
+  --zt-bg: #121212;
+  --zt-fg: #e5e7eb;
+  --zt-muted: #9ca3af;
+  --zt-line: #6b7280;
+  --zt-pep: #fbbf24;
+  --zt-ctrl: #38bdf8;
+  --zt-pip: #a78bfa;
+  --zt-idp: #34d399;
+  --zt-res: #94a3b8;
+  --zt-allow: #4ade80;
+  --zt-deny: #fb7185;
+}
+
+/* SVG 圖表共用 */
+.zt-svg {
+  width: 100%;
+  height: auto;
+  color: var(--zt-fg);
+  font-family: inherit;
+}
+
+.zt-svg text {
+  fill: currentColor;
+}
+
+/* 文字壓在線上時，用背景色描邊讓字可讀 */
+.zt-svg .halo {
+  paint-order: stroke;
+  stroke: var(--zt-bg);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+.zt-svg .edge {
+  fill: none;
+  stroke: var(--zt-line);
+  stroke-width: 2;
+  opacity: 0.25;
+  transition: opacity 0.4s, stroke 0.4s;
+}
+
+.zt-svg .edge.on {
+  opacity: 1;
+  stroke-dasharray: 7 6;
+  animation: zt-flow 0.7s linear infinite;
+}
+
+@keyframes zt-flow {
+  to {
+    stroke-dashoffset: -13;
+  }
+}
+
+.zt-svg .zone {
+  fill: none;
+  stroke: var(--zt-line);
+  stroke-dasharray: 4 4;
+  opacity: 0.6;
+}
+
+.zt-svg .zone-label {
+  font-size: 11px;
+  fill: var(--zt-muted);
+  letter-spacing: 0.04em;
+}
+
+.zt-fade {
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.zt-hidden {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.zt-caption {
+  font-size: 0.95rem;
+  color: var(--zt-muted);
+}
+
+.zt-caption b {
+  color: var(--zt-fg);
+}
