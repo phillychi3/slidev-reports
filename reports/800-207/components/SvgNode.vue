@@ -39,7 +39,8 @@ defineProps<{
 
 <style scoped>
 .box {
-  fill: color-mix(in srgb, var(--c) 14%, transparent);
+  /* 不透明底色：跨在網段邊界上的節點不會被網段虛線穿過 */
+  fill: color-mix(in srgb, var(--c) 14%, var(--zt-bg));
   stroke: var(--c);
   stroke-width: 1.5;
   transition: fill 0.35s, stroke-width 0.35s;
@@ -71,7 +72,7 @@ defineProps<{
 }
 
 .active .box {
-  fill: color-mix(in srgb, var(--c) 30%, transparent);
+  fill: color-mix(in srgb, var(--c) 30%, var(--zt-bg));
   stroke-width: 3;
 }
 

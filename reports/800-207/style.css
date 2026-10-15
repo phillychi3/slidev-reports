@@ -96,3 +96,43 @@ html.dark {
 .zt-caption b {
   color: var(--zt-fg);
 }
+
+/* 圖表頁：縮小標題，把空間留給圖 */
+.slidev-layout.compact h1 {
+  font-size: 1.8rem;
+  line-height: 2.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.slidev-layout.compact h1 + p {
+  margin-top: 0;
+}
+
+/* 細項表格頁 */
+.slidev-layout.dense table,
+.slidev-layout.dense th,
+.slidev-layout.dense td {
+  font-size: 0.72rem !important;
+  line-height: 1.3 !important;
+}
+
+.slidev-layout.dense th,
+.slidev-layout.dense td {
+  padding: 0.3rem 0.5rem !important;
+}
+
+.slidev-layout.dense h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.3rem;
+}
+
+/* JSON 對照頁：程式碼縮小 */
+.zt-code .slidev-code {
+  font-size: 10.5px !important;
+  line-height: 17px !important;
+}
+
+.nowrap-last th:last-child,
+.nowrap-last td:last-child {
+  white-space: nowrap;
+}

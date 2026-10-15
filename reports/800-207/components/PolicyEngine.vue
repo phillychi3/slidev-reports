@@ -1,70 +1,66 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-// 依 cmd/pe/main.go 的 decide() 順序模擬 criteria-based trust algorithm。
-// 拒絕理由文字與 PE 原始碼一致。
+// 依 cmd/pe/main.go 的 decide() 模擬 criteria-based trust algorithm（§3.3.1）：
+// 8 項條件全部評估並列出，第一個失敗的條件就是拒絕原因。條件名稱與文字與 PE 原始碼一致。
 const props = withDefaults(defineProps<{ step?: number }>(), { step: 0 })
 
 type R = 'pass' | 'fail' | 'skip'
-interface Scenario {
-  title: string
-  user: string
-  device: string
-  resource: string
-  results: R[]
-  details: string[]
-  reason: string
+interface Check { name: string, src: string, result: R, detail: string }
+
+const policy: Record<string, { desc: string, admin: boolean, unmanaged: boolean }> = {
+  a: { desc: '一般資源：已驗證使用者，可使用未受管理裝置', admin: false, unmanaged: true },
+  b: { desc: '敏感資源：需要 admin 角色及合規受管理裝置', admin: true, unmanaged: false },
+  c: { desc: '管理資源：需要 admin 角色，可使用未受管理裝置', admin: true, unmanaged: true },
 }
 
-const checks = ['身分與效期', '威脅情資', '裝置身分與狀態', '資源角色']
+// 展示只用借用電腦（無裝置憑證），所以裝置狀態（CDM）一律略過
+interface Scenario {
+  title: string
+  user: 'alice' | 'bob'
+  res: 'a' | 'b' | 'c'
+  badUser?: boolean
+}
 
 const scenarios: Scenario[] = [
-  {
-    title: '借用電腦 → A',
-    user: 'alice', device: '未受管理裝置', resource: 'A 一般資源',
-    results: ['pass', 'pass', 'pass', 'pass'],
-    details: ['passkey 登入 · session 未過期', 'ti:bad_users / ti:bad_ips 未命中', '無憑證，但 A 設定 allow_unmanaged: true', 'A 不要求角色'],
-    reason: '使用者已驗證；政策允許未受管理裝置存取此資源',
-  },
-  {
-    title: '借用電腦 → B',
-    user: 'bob（admin）', device: '未受管理裝置', resource: 'B 敏感資源',
-    results: ['pass', 'pass', 'fail', 'skip'],
-    details: ['passkey 登入 · session 未過期', '未命中', '無憑證，B 的 allow_unmanaged: false', ''],
-    reason: '此資源需要受管理裝置，請使用已配置裝置憑證的客戶端',
-  },
-  {
-    title: '帳號列入風險名單',
-    user: 'alice', device: '未受管理裝置', resource: 'A 一般資源',
-    results: ['pass', 'fail', 'skip', 'skip'],
-    details: ['passkey 登入 · session 未過期', 'SISMEMBER ti:bad_users alice → 1', '', ''],
-    reason: '使用者帳號在威脅情資名單中',
-  },
-  {
-    title: '受管理裝置 + alice → B',
-    user: 'alice', device: 'laptop1（compliant）', resource: 'B 敏感資源',
-    results: ['pass', 'pass', 'pass', 'fail'],
-    details: ['passkey 登入 · session 未過期', '未命中', 'mTLS 憑證 CN=laptop1 · posture = compliant', 'B 要求 admin，alice 沒有'],
-    reason: '缺少必要角色 [admin]',
-  },
-  {
-    title: '受管理裝置 + bob → B',
-    user: 'bob（admin）', device: 'laptop1（compliant）', resource: 'B 敏感資源',
-    results: ['pass', 'pass', 'pass', 'pass'],
-    details: ['passkey 登入 · session 未過期', '未命中', 'mTLS 憑證 CN=laptop1 · posture = compliant', 'bob 具有 admin'],
-    reason: '所有條件皆符合',
-  },
-  {
-    title: '裝置變成不合規',
-    user: 'bob（admin）', device: 'laptop1（noncompliant）', resource: 'A 一般資源',
-    results: ['pass', 'pass', 'fail', 'skip'],
-    details: ['passkey 登入 · session 未過期', '未命中', 'GET posture:laptop1 → noncompliant', ''],
-    reason: '裝置狀態為 "noncompliant"，要求 "compliant"',
-  },
+  { title: 'alice · 借用電腦 → a', user: 'alice', res: 'a' },
+  { title: 'alice · 借用電腦 → b', user: 'alice', res: 'b' },
+  { title: 'bob · 借用電腦 → c', user: 'bob', res: 'c' },
+  { title: 'bob · 借用電腦 → b', user: 'bob', res: 'b' },
+  { title: 'alice 列入風險名單 → a', user: 'alice', res: 'a', badUser: true },
 ]
 
+function decide(s: Scenario) {
+  const rp = policy[s.res]
+  const ip = '172.18.0.5'
+  const isAdmin = s.user === 'bob'
+  const c: Check[] = [
+    { name: '資源政策', src: 'policy.json', result: 'pass', detail: rp.desc },
+    { name: '使用者身分', src: 'subject', result: 'pass', detail: s.user },
+    { name: '登入效期', src: 'expires_at', result: 'pass', detail: '有效至 14:18:05' },
+    { name: '威脅情資：來源 IP', src: 'ti:bad_ips', result: 'pass', detail: `"${ip}" 不在 ti:bad_ips` },
+    s.badUser
+      ? { name: '威脅情資：帳號', src: 'ti:bad_users', result: 'fail', detail: '使用者帳號在威脅情資名單中' }
+      : { name: '威脅情資：帳號', src: 'ti:bad_users', result: 'pass', detail: `"${s.user}" 不在 ti:bad_users` },
+  ]
+  c.push(rp.unmanaged
+    ? { name: '裝置身分', src: 'device_id / fp', result: 'pass', detail: '未受管理裝置；政策允許此資源' }
+    : { name: '裝置身分', src: 'device_id / fp', result: 'fail', detail: '此資源需要受管理裝置，請使用已配置裝置憑證的客戶端' })
+  c.push({ name: '裝置狀態（CDM）', src: 'posture:<CN>', result: 'skip', detail: '沒有裝置憑證' })
+  if (!rp.admin)
+    c.push({ name: '角色', src: 'roles', result: 'pass', detail: '任何已驗證使用者' })
+  else if (isAdmin)
+    c.push({ name: '角色', src: 'roles', result: 'pass', detail: '具備 [admin] 之一' })
+  else
+    c.push({ name: '角色', src: 'roles', result: 'fail', detail: '缺少必要角色 [admin]' })
+
+  const failed = c.find(x => x.result === 'fail')
+  return { checks: c, allow: !failed, reason: failed ? failed.detail : '使用者已驗證；政策允許未受管理裝置存取此資源' }
+}
+
 const current = ref(0)
-const revealed = ref(0) // 已顯示結果的檢查數；checks.length + 1 代表顯示最終判定
+const revealed = ref(0) // 已顯示的條件數；9 代表顯示最終判定
+const result = computed(() => decide(scenarios[current.value]))
 let timers: ReturnType<typeof setTimeout>[] = []
 
 function run(i: number) {
@@ -72,8 +68,8 @@ function run(i: number) {
   timers = []
   current.value = Math.min(Math.max(i, 0), scenarios.length - 1)
   revealed.value = 0
-  for (let k = 1; k <= checks.length + 1; k++)
-    timers.push(setTimeout(() => (revealed.value = k), k * 380))
+  for (let k = 1; k <= 9; k++)
+    timers.push(setTimeout(() => (revealed.value = k), k * 200))
 }
 
 watch(() => props.step, s => run(s), { immediate: true })
@@ -104,35 +100,36 @@ const icon: Record<R, string> = { pass: '✓', fail: '✕', skip: '—' }
         <span class="chip">PEP</span><span class="arrow">→</span>
         <span class="chip ctrl">PA</span><span class="arrow">→</span>
         <span class="chip ctrl">PE /decide</span>
-        <span class="ml-3 font-mono text-sm">
+        <span class="ml-3 font-mono text-xs">
           user=<b>{{ scenarios[current].user }}</b>
-          · device=<b>{{ scenarios[current].device }}</b>
-          · resource=<b>{{ scenarios[current].resource }}</b>
+          · device=<b>未受管理裝置</b>
+          · resource=<b>{{ scenarios[current].res }}</b>
         </span>
       </div>
 
-      <div class="flex flex-col gap-2 mt-3">
+      <div class="flex flex-col gap-1 mt-2">
         <div
-          v-for="(c, k) in checks" :key="c"
+          v-for="(c, k) in result.checks" :key="c.name"
           class="check"
-          :class="revealed > k ? scenarios[current].results[k] : 'pending'"
+          :class="revealed > k ? c.result : 'pending'"
         >
           <div class="num">{{ k + 1 }}</div>
-          <div class="name">{{ c }}</div>
-          <div class="detail">{{ revealed > k ? scenarios[current].details[k] : '' }}</div>
-          <div class="icon">{{ revealed > k ? icon[scenarios[current].results[k]] : '…' }}</div>
+          <div class="name">{{ c.name }}</div>
+          <div class="src">{{ c.src }}</div>
+          <div class="detail">{{ revealed > k ? c.detail : '' }}</div>
+          <div class="icon">{{ revealed > k ? icon[c.result] : '…' }}</div>
         </div>
       </div>
 
       <Transition name="verdict">
         <div
-          v-if="revealed > checks.length"
+          v-if="revealed > result.checks.length"
           :key="current"
           class="verdict"
-          :class="scenarios[current].results.includes('fail') ? 'deny' : 'allow'"
+          :class="result.allow ? 'allow' : 'deny'"
         >
-          <b>{{ scenarios[current].results.includes('fail') ? '403 拒絕' : '允許，轉發到資源' }}</b>
-          <span class="font-mono text-sm ml-2">reason: {{ scenarios[current].reason }}</span>
+          <b>{{ result.allow ? '允許，轉發到資源' : '403 拒絕' }}</b>
+          <span class="font-mono text-xs ml-2">reason（第一個失敗的條件）: {{ result.reason }}</span>
         </div>
       </Transition>
     </div>
@@ -184,9 +181,10 @@ const icon: Record<R, string> = { pass: '✓', fail: '✕', skip: '—' }
 
 .check {
   display: grid;
-  grid-template-columns: 1.8rem 8.5rem 1fr 2rem;
+  grid-template-columns: 1.4rem 8.6rem 6.2rem 1fr 1.6rem;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  padding: 0.22rem 0.7rem;
+  font-size: 0.85rem;
   border-radius: 10px;
   border: 1.5px solid color-mix(in srgb, var(--zt-line) 40%, transparent);
   transition: background 0.3s, border-color 0.3s, opacity 0.3s;
@@ -201,8 +199,14 @@ const icon: Record<R, string> = { pass: '✓', fail: '✕', skip: '—' }
   font-weight: 700;
 }
 
+.check .src {
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+  color: var(--zt-pip);
+}
+
 .check .detail {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-family: ui-monospace, monospace;
   color: var(--zt-muted);
 }
@@ -210,7 +214,7 @@ const icon: Record<R, string> = { pass: '✓', fail: '✕', skip: '—' }
 .check .icon {
   text-align: center;
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1rem;
 }
 
 .check.pending {
@@ -241,8 +245,8 @@ const icon: Record<R, string> = { pass: '✓', fail: '✕', skip: '—' }
 }
 
 .verdict {
-  margin-top: 0.8rem;
-  padding: 0.6rem 0.9rem;
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.9rem;
   border-radius: 10px;
   border-left: 5px solid;
 }

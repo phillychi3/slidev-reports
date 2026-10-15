@@ -6,9 +6,9 @@ const props = withDefaults(defineProps<{ step?: number }>(), { step: 0 })
 
 const stations = [
   { title: '風險事件', body: '管理者寫入威脅情資', code: 'SADD ti:bad_users', color: 'var(--zt-pip)' },
-  { title: 'Redis 通知', body: 'keyspace notification', code: 'keyspace: ti:*', color: 'var(--zt-pip)' },
+  { title: 'Redis 通知', body: 'keyspace notification；PA 記一筆 pip 事件', code: 'keyspace: ti:*', color: 'var(--zt-pip)' },
   { title: 'PA 重新評估', body: '已授權的資源全部重問 PE（每 30 秒也會跑一次）', code: 'reevaluateAll()', color: 'var(--zt-ctrl)' },
-  { title: '撤銷', body: 'PA 移除授權並通知 PEP', code: 'PUBLISH pep:revoke', color: 'var(--zt-ctrl)' },
+  { title: '撤銷', body: 'SREM grants、通知 PEP、記 revoke 事件', code: 'PUBLISH pep:revoke', color: 'var(--zt-ctrl)' },
   { title: '下一個請求', body: '重新整理 /a/，PEP 照常再問', code: 'HTTP 403', color: 'var(--zt-deny)' },
 ]
 
@@ -18,7 +18,8 @@ const logs = [
   { s: 0, t: 'cmd', text: '$ redis-cli SADD ti:bad_users alice' },
   { s: 0, t: 'out', text: '(integer) 1' },
   { s: 1, t: 'note', text: '# Redis 推送事件 → PA 的 PSubscribe 收到' },
-  { s: 2, t: 'pe', text: `pe-1   | DECIDE user=alice device= ip=172.18.0.7 resource=a -> allow=false (${reason})` },
+  { s: 2, t: 'pe', text: `pe-1   | DECIDE user=alice device= ip=172.18.0.5 resource=a -> allow=false (${reason})` },
+  { s: 3, t: 'note', text: '# PA：SREM grants:<session> a · XADD zt:events（revoke，含 8 項 checks）' },
   { s: 3, t: 'pa', text: `pa-1   | REVOKE session=${sid} resource=a reason="${reason}"` },
   { s: 3, t: 'pa', text: 'pa-1   | REEVAL [PIP 變動 ti:bad_users (sadd)] checked=1 revoked=1' },
   { s: 3, t: 'pep', text: `pep-1  | REVOKE session=${sid} resource=a reason="${reason}"` },
