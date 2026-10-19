@@ -8,26 +8,25 @@ const props = withDefaults(defineProps<{ step?: number }>(), { step: 0 })
 type R = 'pass' | 'fail' | 'skip'
 interface Check { name: string, src: string, result: R, detail: string }
 
+// 與 zt-demo config/policy.json 一致
 const policy: Record<string, { desc: string, admin: boolean, unmanaged: boolean }> = {
-  a: { desc: '一般資源：已驗證使用者，可使用未受管理裝置', admin: false, unmanaged: true },
-  b: { desc: '敏感資源：需要 admin 角色及合規受管理裝置', admin: true, unmanaged: false },
-  c: { desc: '管理資源：需要 admin 角色，可使用未受管理裝置', admin: true, unmanaged: true },
+  media: { desc: '影音庫（Lithium Player）：已驗證使用者，可使用未受管理裝置', admin: false, unmanaged: true },
+  status: { desc: '伺服器監控與管理（YASS：主機資訊、新增／刪除主機、agent token）：需要 admin 角色，可使用未受管理裝置', admin: true, unmanaged: true },
 }
 
 // 展示只用借用電腦（無裝置憑證），所以裝置狀態（CDM）一律略過
 interface Scenario {
   title: string
   user: 'alice' | 'bob'
-  res: 'a' | 'b' | 'c'
+  res: 'media' | 'status'
   badUser?: boolean
 }
 
 const scenarios: Scenario[] = [
-  { title: 'alice · 借用電腦 → a', user: 'alice', res: 'a' },
-  { title: 'alice · 借用電腦 → b', user: 'alice', res: 'b' },
-  { title: 'bob · 借用電腦 → c', user: 'bob', res: 'c' },
-  { title: 'bob · 借用電腦 → b', user: 'bob', res: 'b' },
-  { title: 'alice 列入風險名單 → a', user: 'alice', res: 'a', badUser: true },
+  { title: 'alice → media', user: 'alice', res: 'media' },
+  { title: 'alice → status', user: 'alice', res: 'status' },
+  { title: 'bob（admin）→ status', user: 'bob', res: 'status' },
+  { title: 'alice 列入風險名單 → media', user: 'alice', res: 'media', badUser: true },
 ]
 
 function decide(s: Scenario) {

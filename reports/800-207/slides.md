@@ -20,15 +20,10 @@ fonts:
 
 # 無密碼零信任存取
 
-## 依 NIST SP 800-207 的教學原型
+## NIST SP 800-207
 
-<div class="mt-8 opacity-80">
-借一台電腦、只開瀏覽器、用自己的手機 passkey 登入
-</div>
 
-<div class="mt-10 text-sm opacity-60 font-mono">
-Go（PEP · PA · PE）· Keycloak · Caddy · Redis · step-ca · Docker Compose
-</div>
+
 
 <div class="pt-10">
   <span @click="$slidev.nav.next" class="px-2 py-1 rounded cursor-pointer" hover="bg-white bg-opacity-10">
@@ -67,11 +62,6 @@ clicks: 3
 - **動態政策**<br><span class="opacity-60 text-sm">身分 + 裝置狀態 + 威脅情資一起判斷</span>
 
 </div>
-<div v-click="3">
-
-- **本專案**<br><span class="opacity-60 text-sm">PEP / PA / PE 用 Go 自己寫，PIP 用現成套件</span>
-
-</div>
 </div>
 </div>
 
@@ -97,66 +87,17 @@ class: compact
 
 <!--
 （約 55 秒）
-這是實際部署的元件和網段。左邊是客戶端，上面是對外的 untrusted 網段，下面是 internal 的控制平面，右邊三個資源各自在獨立的 enclave。Keycloak 和 PEP 跨在網段邊界上，代表同時接在兩個網段。
+這是實際部署的元件和網段。左邊是客戶端，上面是對外的 untrusted 網段，下面是 internal 的控制平面，右邊兩個應用各自在獨立的 enclave：上面是影音庫 Lithium Player，下面是伺服器狀態 YASS。Keycloak 和 PEP 跨在網段邊界上，代表同時接在兩個網段。
 
 [click] 公開入口：瀏覽器用公開 CA 的 HTTPS 連到 Caddy。Caddy 再用 step-ca 簽的憑證連 PEP，而且會驗證主機名稱是 pep。Caddy 不轉送用戶端憑證，所以借用電腦一律是未受管理裝置。/auth 轉給 Keycloak。手機跟借用電腦之間是 WebAuthn 的跨裝置通道，不經過伺服器網路。
 
 [click] 控制平面：每個請求 PEP 把 AccessContext 送給 PA，PA 轉給 PE，PE 到 Redis 查威脅情資。PA 把授權和稽核事件寫進 Redis，撤銷則透過 pub/sub 通知 PEP。PEP 也在內部跟 Keycloak 換 token、拿 JWKS。威脅情資由管理者用 redis-cli 寫入，是模擬資料。
 
-[click] 資料平面：只有 PEP 能同時連到三個 enclave，它轉發時帶上 X-ZT-User。資源之間互相連不到，這就是微分段。
+[click] 資料平面：只有 PEP 同時接上兩個 enclave，它轉發時寫入 X-ZT-User，Lithium 和 YASS 都直接用這個 header 認人，不用自己的登入頁。這能成立，是因為 enclave 只有 PEP 進得來。YASS 的三台 agent 在 enclave 內用各自的主機 token 回報，不經 PEP。微分段：lithium 連得到自己的後端，但連不到 yass，連名稱都解析不到。
 
-[click] 最後依連線保護等級上色：綠色是有 TLS 而且驗證對端；橘色是 PEP 到 Keycloak，雖然是 HTTP，但 token 本身有簽章；紅色是控制平面內部，目前只靠網段隔離，這是已知限制。
+[click] 最後依連線保護等級上色：綠色是有 TLS 而且驗證對端；橘色是 HTTP 但靠 token 驗證，例如 PEP 到 Keycloak 的 token 有簽章、agent 帶主機 token；紅色是控制平面和 enclave 內部，目前只靠網段隔離，這是已知限制。
 -->
 
----
-class: dense
----
-
-# 網段與連線保護
-
-<div grid="~ cols-[1fr_1.35fr] gap-6" class="mt-2">
-<div>
-
-### 網段（Docker network）
-
-| 網段 | internal | 成員 |
-| --- | --- | --- |
-| untrusted | 否 | Caddy、Keycloak、PEP |
-| control-plane | **是** | Keycloak、step-ca、Redis、PE、PA、PEP |
-| enclave-a | **是** | PEP、資源 a（+ 模擬被攻陷的 res-a-shell） |
-| enclave-b | **是** | PEP、資源 b |
-| enclave-c | **是** | PEP、資源 c |
-
-<div class="text-xs opacity-75 mt-3 leading-relaxed">
-
-- **唯一入口**：資源不接 untrusted，外部只能經 PEP
-- **微分段**：在 res-a 的網路命名空間執行 `wget http://res-b` → 失敗
-
-</div>
-</div>
-<div>
-
-### 每條連線的保護
-
-| 連線 | 協定 | 加密 | 對端驗證 |
-| --- | --- | --- | --- |
-| 瀏覽器 → Caddy | HTTPS | ✅ 公開 CA | 瀏覽器驗證伺服器 |
-| Caddy → PEP | HTTPS | ✅ step-ca | 驗 PEP 憑證與主機名 `pep` |
-| 手機 ↔ 借用電腦 | WebAuthn hybrid | ✅ | FIDO 協定 |
-| PEP → Keycloak（token、JWKS） | HTTP | ❌ | token 有簽章，以 JWKS 驗證 |
-| PEP → PA → PE | HTTP | ❌ | **無**，只靠 internal network |
-| PA／PE／PEP → Redis | Redis | ❌ | **無** |
-| PEP → 資源 | HTTP | ❌ | **無** |
-
-</div>
-</div>
-
-<!--
-（約 30 秒）
-左邊是網段成員。標成 internal 的網段沒有對外路由，容器之間只能透過同時接在兩個網段的元件互通。資源不接 untrusted，所以外部只能經 PEP。
-
-右邊是每條連線的保護。對外的連線都有 TLS；但控制平面內部，PEP、PA、PE、Redis 到資源，目前都是明文、沒有服務身分驗證。網路隔離不等於 800-207 要求的完整通訊保護，這是後續要補的內部 mTLS。
--->
 
 ---
 clicks: 4
@@ -180,33 +121,7 @@ class: compact
 [click] PEP 在容器內部用 client secret 加 code_verifier 換 token，驗簽章、iss、aud、nonce、azp，最後發 session cookie。
 -->
 
----
-class: dense
----
 
-# 登入的資料細項
-
-| 項目 | 內容 |
-| --- | --- |
-| 授權請求參數 | `response_type=code` · `client_id=pep` · `scope=openid profile` · `state` · `nonce` · `code_challenge`（S256）· `prompt=login` |
-| WebAuthn 設定 | RP ID ＝ 展示網域 · User verification `required` · 不限制驗證器類型（手機跨裝置／安全金鑰皆可） |
-| Token 交換 | PEP 以 HTTP Basic 帶 client secret + `code_verifier`，走容器內部網路（backchannel） |
-| ID token 驗證 | JWKS 簽章 · `iss` · `aud=pep` · `nonce` 等於登入時產生的值 |
-| Access token 驗證 | JWKS 簽章 · `azp=pep`（確認是發給這個 PEP 的）· `sub` 與 ID token 一致 |
-| PEP 使用的 claims | `sub` · `preferred_username` · `realm_access.roles` · `amr` · `azp` · `exp` |
-| Session 效期 | min（access token 效期, ID token 效期, 15 分鐘） |
-| 登入 cookie | `__Host-zt_login` = state，10 分鐘；callback 時比對後立即清除 |
-| Session cookie | `__Host-zt_session`：`Secure` · `HttpOnly` · `SameSite=Lax` · `Path=/` |
-
-<div class="mt-4 text-sm opacity-80">
-<code>__Host-</code> 前綴：瀏覽器只接受 HTTPS、無 Domain、Path=/ 的 cookie，子網域無法覆寫
-</div>
-
-<!--
-（約 25 秒）
-這頁是登入細項。重點是三個檢查：state 綁定瀏覽器防 login CSRF；PKCE 防授權碼被攔截後拿去換 token；access token 檢查 azp，確保是發給我們這個 PEP 的，不是別的 client 的 token。
-session 效期取三者最短，最多 15 分鐘。cookie 都用 __Host- 前綴。
--->
 
 ---
 clicks: 4
@@ -219,7 +134,7 @@ class: compact
 
 <!--
 （約 45 秒）
-登入後的每一個請求。PEP 先查 session，沒有或已過期就導向登入，連 PA 都不問。
+登入後的每一個請求，這裡以 Lithium 的 API 請求為例，播放、換歌都是一個個 API 請求。PEP 先查 session，沒有或已過期就導向登入，連 PA 都不問。
 
 [click] 通過後 PEP 組出 AccessContext 送 PA，PA 原封不動轉給 PE。
 
@@ -227,7 +142,7 @@ class: compact
 
 [click] PA 依結果更新授權：允許就 SADD grants，拒絕就 SREM，並把這筆決策寫進稽核 stream，再回給 PEP。
 
-[click] 允許時 PEP 轉發，並且刪掉 Cookie 和 Authorization，改加 X-ZT-User；拒絕就回 403 並顯示原因。PEP 不快取任何授權。
+[click] 允許時 PEP 轉發，並且刪掉 Cookie 和 Authorization，改加 X-ZT-User；Lithium 後端就用這個 header 認出是 alice，第一次出現時自動建帳號，所以不會看到 Lithium 自己的登入頁。拒絕就回 403 並顯示原因。PEP 不快取任何授權。
 -->
 
 ---
@@ -251,7 +166,7 @@ class: compact
   "device_id": "",  // 裝置憑證 CN
   "device_fp": "",  // 憑證 DER 的 SHA-256
   "source_ip": "172.18.0.5", // TCP 對端
-  "resource": "b",
+  "resource": "status",
   "expires_at": 1791902275 // ≤ token 效期
 }
 ```
@@ -259,20 +174,20 @@ class: compact
 </div>
 <div>
 
-<div class="text-sm mb-1 opacity-80">PE → PA → PEP　<b>Decision</b>（alice 用借用電腦存取 b）</div>
+<div class="text-sm mb-1 opacity-80">PE → PA → PEP　<b>Decision</b>（alice 用借用電腦存取 status）</div>
 
 ```jsonc {all|2-3|10-15}
 {
   "allow": false,
-  "reason": "此資源需要受管理裝置，請使用已配置裝置憑證的客戶端",
-  "checks": [ // 8 項全部評估；pass 的 detail 省略
+  "reason": "缺少必要角色 [admin]",
+  "checks": [ // 8 項全部評估；部分 detail 省略
     { "name": "資源政策", "result": "pass", … },
     { "name": "使用者身分", "result": "pass", … },
     { "name": "登入效期", "result": "pass", … },
     { "name": "威脅情資：來源 IP", "result": "pass", … },
     { "name": "威脅情資：帳號", "result": "pass", … },
-    { "name": "裝置身分", "result": "fail",
-      "detail": "此資源需要受管理裝置…" },
+    { "name": "裝置身分", "result": "pass",
+      "detail": "未受管理裝置；政策允許此資源" },
     { "name": "裝置狀態（CDM）", "result": "skip",
       "detail": "沒有裝置憑證" },
     { "name": "角色", "result": "fail",
@@ -298,11 +213,11 @@ class: compact
 
 [click] Decision 這邊，allow 和 reason 給 PEP 用。
 
-[click] checks 列出全部 8 項。這個例子有兩項失敗：裝置身分和角色；reason 取第一個失敗的條件。CDM 是 skip，因為沒有憑證就沒有東西可以查。
+[click] checks 列出全部 8 項。裝置身分通過，因為 status 允許未受管理裝置；CDM 是 skip，因為沒有憑證就沒有東西可以查；最後角色失敗，alice 不是 admin，reason 就取這個失敗的條件。
 -->
 
 ---
-clicks: 4
+clicks: 3
 class: compact
 ---
 
@@ -315,17 +230,15 @@ class: compact
 <PolicyEngine :step="$clicks" />
 
 <!--
-（約 40 秒）
-PE 依序評估 8 項條件，資料來源標在第三欄。展示用的都是借用電腦，沒有裝置憑證，所以裝置狀態（CDM）這項一律略過。
-第一個情境：alice 進 a，a 允許未受管理裝置，結果允許。
+（約 35 秒）
+PE 依序評估 8 項條件，資料來源標在第三欄。兩個應用都允許未受管理裝置，所以借用電腦的裝置身分會通過，裝置狀態（CDM）略過。
+第一個情境：alice 開影音庫 media，任何已驗證使用者都可以，允許。
 
-[click] alice 進 b：裝置身分失敗，角色也失敗，拒絕原因取第一個，也就是需要受管理裝置。
+[click] alice 開伺服器狀態 status：status 要 admin，第八項角色失敗，403。
 
-[click] bob 進 c：c 要 admin，但允許未受管理裝置，bob 是 admin，所以允許。
+[click] bob 是 admin，同一台借用電腦開 status 就允許。差別只在角色。
 
-[click] bob 進 b：就算是 admin，借用電腦沒有裝置憑證，還是卡在裝置身分。
-
-[click] alice 被列進風險名單：第五項威脅情資帳號失敗。任何 PIP 查詢失敗，也一律拒絕。
+[click] alice 被列進風險名單：第五項威脅情資帳號失敗，連 media 都進不去。任何 PIP 查詢失敗，也一律拒絕。
 -->
 
 ---
@@ -350,7 +263,7 @@ PEP <b>不快取授權</b>：撤銷通知只是加速，真正的保證是「下
 
 [click] PE 拒絕，PA 移除 grant、發 pub/sub 通知 PEP，並記一筆撤銷事件，裡面含 8 項 checks。
 
-[click] alice 重新整理就拿到 403。PEP 不快取授權，就算通知沒送到，下一個請求也會被擋。
+[click] alice 重新整理 /media/ 就拿到 403，之後的 API 請求和換歌也都被拒。PEP 不快取授權，就算通知沒送到，下一個請求也會被擋。不過已經下載到瀏覽器的那首歌還是能播完，這是撤銷的限制。
 -->
 
 ---

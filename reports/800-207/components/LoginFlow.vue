@@ -12,8 +12,8 @@ const actors: SeqActor[] = [
 ]
 
 const msgs: SeqMsg[] = [
-  { g: 1, from: 'b', to: 'p', text: 'GET /a/（沒有 session）' },
-  { g: 1, from: 'p', to: 'b', text: '302 /_zt/login?return=/a/' },
+  { g: 1, from: 'b', to: 'p', text: 'GET /media/（沒有 session）' },
+  { g: 1, from: 'p', to: 'b', text: '302 /_zt/login?return=/media/' },
   { g: 1, from: 'b', to: 'p', text: 'GET /_zt/login' },
   { g: 1, from: 'p', note: true, text: '產生 state · nonce · PKCE verifier，暫存在 PEP' },
   { g: 1, from: 'p', to: 'b', text: '302 授權端點 · Set-Cookie __Host-zt_login=state' },
@@ -29,7 +29,7 @@ const msgs: SeqMsg[] = [
   { g: 5, from: 'p', to: 'k', text: 'POST token：client secret + code_verifier（容器內 backchannel）' },
   { g: 5, from: 'k', to: 'p', text: 'ID token + access token' },
   { g: 5, from: 'p', note: true, text: 'JWKS 驗簽 · iss · aud=pep · nonce · azp=pep · 兩個 token 的 sub 一致' },
-  { g: 5, from: 'p', to: 'b', text: 'Set-Cookie __Host-zt_session · 302 /a/', tone: 'allow' },
+  { g: 5, from: 'p', to: 'b', text: 'Set-Cookie __Host-zt_session · 302 /media/', tone: 'allow' },
 ]
 
 const captions = [
