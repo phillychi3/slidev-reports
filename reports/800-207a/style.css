@@ -1,0 +1,163 @@
+:root {
+  --zt-bg: #ffffff;
+  --zt-fg: #1f2937;
+  --zt-muted: #6b7280;
+  --zt-line: #9ca3af;
+  --zt-pep: #d97706;
+  --zt-ctrl: #0284c7;
+  --zt-pip: #7c3aed;
+  --zt-idp: #059669;
+  --zt-res: #475569;
+  --zt-allow: #16a34a;
+  --zt-deny: #e11d48;
+}
+
+html.dark {
+  --zt-bg: #121212;
+  --zt-fg: #e5e7eb;
+  --zt-muted: #9ca3af;
+  --zt-line: #6b7280;
+  --zt-pep: #fbbf24;
+  --zt-ctrl: #38bdf8;
+  --zt-pip: #a78bfa;
+  --zt-idp: #34d399;
+  --zt-res: #94a3b8;
+  --zt-allow: #4ade80;
+  --zt-deny: #fb7185;
+}
+
+/* SVG 圖表共用 */
+.zt-svg {
+  width: 100%;
+  height: auto;
+  color: var(--zt-fg);
+  font-family: inherit;
+}
+
+.zt-svg text {
+  fill: currentColor;
+}
+
+/* 文字壓在線上時，用背景色描邊讓字可讀 */
+.zt-svg .halo {
+  paint-order: stroke;
+  stroke: var(--zt-bg);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+.zt-svg .edge {
+  fill: none;
+  stroke: var(--zt-line);
+  stroke-width: 2;
+  opacity: 0.25;
+  transition: opacity 0.4s, stroke 0.4s;
+}
+
+.zt-svg .edge.on {
+  opacity: 1;
+  stroke-dasharray: 7 6;
+  animation: zt-flow 0.7s linear infinite;
+}
+
+@keyframes zt-flow {
+  to {
+    stroke-dashoffset: -13;
+  }
+}
+
+.zt-svg .zone {
+  fill: none;
+  stroke: var(--zt-line);
+  stroke-dasharray: 4 4;
+  opacity: 0.6;
+}
+
+.zt-svg .zone-label {
+  font-size: 11px;
+  fill: var(--zt-muted);
+  letter-spacing: 0.04em;
+}
+
+.zt-fade {
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.zt-hidden {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.zt-caption {
+  font-size: 0.95rem;
+  color: var(--zt-muted);
+}
+
+.zt-caption b {
+  color: var(--zt-fg);
+}
+
+/* 圖表頁：縮小標題，把空間留給圖 */
+.slidev-layout.compact h1 {
+  font-size: 1.8rem;
+  line-height: 2.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.slidev-layout.compact h1 + p {
+  margin-top: 0;
+}
+
+/* 細項表格頁 */
+.slidev-layout.dense table,
+.slidev-layout.dense th,
+.slidev-layout.dense td {
+  font-size: 0.72rem !important;
+  line-height: 1.3 !important;
+}
+
+.slidev-layout.dense th,
+.slidev-layout.dense td {
+  padding: 0.3rem 0.5rem !important;
+}
+
+.slidev-layout.dense h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.3rem;
+}
+
+/* JSON 對照頁：程式碼縮小 */
+.zt-code .slidev-code {
+  font-size: 10.5px !important;
+  line-height: 17px !important;
+}
+
+.nowrap-last th:last-child,
+.nowrap-last td:last-child {
+  white-space: nowrap;
+}
+
+/* 800-207A 要求對應：狀態標籤 */
+.st {
+  display: inline-block;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.st.done {
+  color: var(--zt-allow);
+  background: color-mix(in srgb, var(--zt-allow) 16%, transparent);
+}
+
+.st.part {
+  color: var(--zt-pep);
+  background: color-mix(in srgb, var(--zt-pep) 16%, transparent);
+}
+
+.st.todo {
+  color: var(--zt-deny);
+  background: color-mix(in srgb, var(--zt-deny) 16%, transparent);
+}
