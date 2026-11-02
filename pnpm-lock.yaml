@@ -47,6 +47,21 @@ importers:
         specifier: ^3.5.33
         version: 3.5.43(typescript@6.0.3)
 
+  reports/800-207a:
+    dependencies:
+      '@slidev/cli':
+        specifier: ^53.0.0
+        version: 53.0.0(@nuxt/kit@3.16.1)(@oxc-project/types@0.153.0)(@types/markdown-it@14.1.2)(@types/node@22.18.7)(@vue/compiler-sfc@3.5.43)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(esbuild@0.27.7)(lightningcss@1.33.0)(markdown-it-async@2.2.0)(oxc-parser@0.153.0)(playwright-chromium@1.51.1)(postcss@8.5.29)(react@19.0.0)(rolldown@1.2.13)(rollup@4.52.3)(srvx@1.0.5)(tsx@4.19.3)
+      '@slidev/theme-default':
+        specifier: latest
+        version: 0.25.0
+      '@slidev/theme-seriph':
+        specifier: latest
+        version: 0.25.0
+      vue:
+        specifier: ^3.5.33
+        version: 3.5.43(typescript@6.0.3)
+
   reports/anyknowledge:
     dependencies:
       '@ant-design/icons':
