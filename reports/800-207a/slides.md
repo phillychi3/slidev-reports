@@ -38,34 +38,7 @@ GKE · Cloud Service Mesh · passkey
 差別是這次改依 NIST SP 800-207A，平台也從單台主機的 docker-compose 換成 GCP 上的 Kubernetes 加 service mesh。
 -->
 
----
-class: dense
----
 
-# 800-207A 要求對應
-
-<div class="text-sm opacity-70 -mt-1 mb-3">
-政策都在 <code>deploy/k8s/manifests/</code>：<code>50-identity-tier.yaml</code>（身分層）、<code>60-network-tier.yaml</code>（網路層）
-</div>
-
-| 800-207A 要求 | 實作 | 狀態 |
-| --- | --- | --- |
-| 服務間連線加密 | `PeerAuthentication` STRICT：四個 namespace 只收 mTLS | <span class="st done">完成</span> |
-| 服務身分驗證 | 每個 workload 一個 ServiceAccount → `spiffe://<專案>.svc.id.goog/ns/<ns>/sa/<sa>`，Mesh CA 簽發、自動輪替 | <span class="st done">完成</span> |
-| 服務授權 | `AuthorizationPolicy`：每個 namespace 預設 `allow-nothing`，逐條允許「來源身分 → 目的、方法、路徑」 | <span class="st done">完成</span> |
-| 終端使用者驗證 | passkey＋OIDC（PEP 驗 token）；PEP 對每個請求簽發 `X-ZT-Assertion`，資源端 sidecar 以 `RequestAuthentication` 驗證 | <span class="st done">完成</span> |
-| 終端使用者授權 | PE 逐請求判斷；資源端 sidecar 再檢查聲明（YASS 需要 `roles` 含 `admin`） | <span class="st done">完成</span> |
-| 網路層政策 | `NetworkPolicy`（GKE Dataplane V2），預設進出皆拒 | <span class="st done">完成</span> |
-| 出站限制 | `Sidecar` `REGISTRY_ONLY`：應用只能連到列出的服務 | <span class="st done">完成</span> |
-| 裝置身分安全地傳給 PEP | gateway TLS MUTUAL → XFCC；PEP 只在上一跳是 gateway 的 SPIFFE ID 時採信 | <span class="st done">完成</span> |
-| 政策經 CI/CD 部署 | Terraform（GCP）＋ manifest 進版控；目前手動 `terraform apply`／`deploy.sh` | <span class="st part">部分</span> |
-| 多雲／多叢集 | 只有單一 GKE 叢集 | <span class="st todo">未做</span> |
-
-<!--
-（約 30 秒）
-這張是 800-207A 的要求和我們的對應。前八項都已經在 GKE 上部署並驗證：服務間加密、服務身分、服務授權、使用者驗證與授權、網路層、出站限制，還有裝置身分怎麼安全地從邊界傳到 PEP。
-沒做完的是兩項：政策目前進版控但還是手動套用，沒有接 CI/CD；800-207A 強調的多雲、多地點，我們只有一個叢集。
--->
 
 ---
 clicks: 4

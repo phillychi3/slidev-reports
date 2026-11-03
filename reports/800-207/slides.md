@@ -104,7 +104,7 @@ clicks: 4
 class: compact
 ---
 
-# 資料交換 ①：登入（OIDC Code + PKCE + passkey）
+# 資料交換 ①：登入
 
 <LoginFlow :step="$clicks" />
 
@@ -288,94 +288,4 @@ https://zt.cloudowo.com
 <!--
 （約 5 秒）
 以上，謝謝大家。後面附錄有上次會議兩個提問的回答，有問題歡迎提問。
--->
-
----
-class: dense
----
-
-# 附錄 A：私鑰被匯出，其他設備能登入嗎？
-
-<div grid="~ cols-2 gap-6" class="mt-2">
-<div>
-
-**以目前實作：可以**，前提是對方也通過使用者的 passkey 驗證
-
-<div class="text-sm">
-
-- 裝置憑證以 p12 交付，私鑰**可匯出**
-- PEP 只比對憑證指紋：複製的 p12 指紋完全相同
-- CDM 以 CN 為 key：複製的裝置也被當成合規
-
-</div>
-
-| 攻擊者擁有 | 結果 |
-| --- | --- |
-| 只有 p12 | 能過 mTLS，但沒有 passkey 無法登入 |
-| p12 + passkey（或本人配合） | 可以登入，裝置身分形同失效 |
-| 帶憑證的 session cookie | 換電腦 → 指紋不符 → 403 |
-| 未受管理裝置的 session cookie | **被偷就能用**（已知限制） |
-
-</div>
-<div>
-
-**改進方向**
-
-<div class="nowrap-last">
-
-| 層級 | 做法 | 狀態 |
-| --- | --- | --- |
-| 防止匯出 | 私鑰在 TPM／Secure Enclave 產生，不可匯出 | 後續 |
-| 證明在硬體內 | attestation：step-ca `device-attest-01`、Apple MDA、TPM | 後續 |
-| 偵測複製 | 同一指紋短時間從不同來源出現 → 列入 TI 並撤銷 | 待做 |
-| 縮短損害 | 裝置憑證短效期、可撤銷 | 後續 |
-
-</div>
-
-<div class="mt-3 text-xs opacity-75">
-同步型 passkey（iCloud 鑰匙圈、Google 密碼管理工具）本來就會出現在同帳號的多台裝置，只能證明「使用者」<br>
-待做實驗：把 <code>laptop1.p12</code> 複製到第二台電腦，記錄能否登入、稽核事件記錄了什麼，加上偵測規則後重做
-</div>
-
-</div>
-</div>
-
-<!--
-附錄，Q&A 用。重點：只有私鑰不夠，還要通過 passkey；但同時拿到兩者時，目前分不出是哪一台。根本解法是硬體綁定加 attestation，短期可以先做複製偵測。
--->
-
----
-class: dense
----
-
-# 附錄 B：為什麼自己寫 PEP？
-
-<div grid="~ cols-[1.3fr_1fr] gap-6" class="mt-2">
-<div>
-
-| 方案 | 類型 | 與本專案的差距 |
-| --- | --- | --- |
-| Envoy + `ext_authz` | 通用代理 + 外部授權 | 可直接接我們的 PA；但要自寫 ext_authz 服務，登入流程另外處理 |
-| OPA | 政策引擎（Rego） | 只取代 PE，不是 PEP |
-| Pomerium | 完整零信任存取代理 | 內建 OIDC、裝置身分；黑盒較多，不易拆開講 800-207 各角色 |
-| oauth2-proxy | OIDC 登入代理 | 只做登入，沒有政策判斷與裝置狀態 |
-
-</div>
-<div class="text-sm leading-relaxed">
-
-**選擇自寫的理由**
-
-- 教學原型：讓 PEP / PA / PE 的**邊界與資料交換**看得見，一個角色一個服務
-- 逐請求授權、撤銷、裝置綁定、fail closed 都在一千多行 Go 內，`go test -race ./...` 可完整測試
-
-**正式環境建議**
-
-- PEP 改用 Envoy，經 `ext_authz` 呼叫 PA；PE 可換 OPA；mTLS 與連線管理交給 Envoy
-- 選做：Envoy 版 PEP 當對照組，共用同一套 PA / PE
-
-</div>
-</div>
-
-<!--
-附錄，Q&A 用。我們把教授的問題理解為「為什麼不用 Envoy 或現成 PEP」。如果教授的意思是要求改用 Envoy，就回答：架構上 PA / PE 不用改，只要把 PEP 換成 Envoy + ext_authz，這是選做的對照實驗。
 -->
