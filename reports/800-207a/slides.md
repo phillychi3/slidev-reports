@@ -201,7 +201,9 @@ class: text-center
 # 謝謝聆聽
 
 <div class="mt-6 font-mono opacity-70">
+<a href="https://34-80-103-100.sslip.io/">
 https://34-80-103-100.sslip.io/
+</a>
 </div>
 
 <div class="mt-2 text-sm opacity-50">
