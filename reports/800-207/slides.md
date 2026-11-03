@@ -224,7 +224,7 @@ class: compact
 # PE 的判斷：8 項條件（§3.3.1）
 
 <div class="text-sm opacity-70 -mt-1 mb-2">
-全部評估、全部記錄；第一個失敗的條件就是拒絕原因。按空白鍵切換情境，也可以直接點
+全部評估、全部記錄；第一個失敗的條件就是拒絕原因
 </div>
 
 <PolicyEngine :step="$clicks" />
