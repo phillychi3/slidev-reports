@@ -23,7 +23,7 @@ fonts:
 ## NIST SP 800-207A
 
 <div class="mt-4 opacity-70">
-GKE · Cloud Service Mesh · passkey
+GKE · Cloud Service Mesh（Istio）· passkey
 </div>
 
 <div class="pt-10">
@@ -35,7 +35,7 @@ GKE · Cloud Service Mesh · passkey
 <!--
 （約 15 秒）
 大家好，這次要報告的是我們零信任原型的第二版。情境一樣：借一台別人的電腦，不用裝東西、也不用打密碼，拿手機的 passkey 就能登入。
-這版改照 NIST 800-207A 來做，平台也從一台主機跑 docker-compose，搬到 GCP 的 Kubernetes，再加上 service mesh。
+這版改照 NIST 800-207A 來做，平台也從一台主機跑 docker-compose，搬到 GCP 的 Kubernetes，再加上 Istio service mesh，用的是 Google 代管的版本 Cloud Service Mesh。
 -->
 
 
@@ -52,11 +52,11 @@ class: compact
 <!--
 （約 60 秒）
 先看整個架構。左邊是使用者，中間的 zt-gateway 是唯一對外的大門，zt-system 放控制平面，右邊兩個應用各自住在自己的 namespace。
-重點是每個服務旁邊都掛了一個 Envoy sidecar，就是那條綠條。服務本身只講 HTTP，加密、驗身分、授權都交給 sidecar。每個服務的 ServiceAccount 就是它的身分證，憑證由 Google 簽、自動換。
+重點是 Istio 會在每個服務旁邊掛一個 Envoy sidecar，就是那條綠條。服務本身只講 HTTP，加密、驗身分、授權都交給 sidecar。每個服務的 ServiceAccount 就是它的身分證，憑證由 Google 簽、自動換。
 
-[click] 入口這邊：一般網域不收憑證，借來的電腦一律當成「沒受管理」；公司配的電腦走 device 子網域，要先拿出裝置憑證才進得來。
+[click] 入口是 Istio 的 ingress gateway。一般網域不收憑證，借來的電腦一律當成「沒受管理」；公司配的電腦走 device 子網域，要先拿出裝置憑證才進得來。
 
-[click] 控制平面的流程跟上一版一樣，PEP 問 PA、PA 再問 PE。差別是現在每一跳都是 mTLS，而且有規則管「誰能打誰」，像是只有 PA 能叫 PE 做決策。
+[click] 控制平面的流程跟上一版一樣，PEP 問 PA、PA 再問 PE。差別是現在每一跳都是 mTLS，而且用 Istio 的授權政策管「誰能打誰」，像是只有 PA 能叫 PE 做決策。
 
 [click] 資料平面這邊，PEP 放行的時候會簽一張「使用者聲明」帶過去，資源前面的 sidecar 會檢查這張聲明。
 
@@ -147,7 +147,7 @@ spec:
 
 <!--
 （約 30 秒）
-這頁看那張聲明長什麼樣子，還有資源端怎麼檢查它。
+這頁看那張聲明長什麼樣子，右邊是資源端的 Istio 政策，負責檢查它。
 
 [click] 它寫了這張聲明是給哪個資源用的，
 
