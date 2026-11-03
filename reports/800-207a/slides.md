@@ -164,25 +164,6 @@ spec:
 [click] 而且角色要是 admin 才放行。也就是說，資源自己會再把關一次。
 -->
 
----
-clicks: 3
-class: compact
----
-
-# 資料交換 ③：裝置身分經 gateway 傳給 PEP
-
-<DeviceFlow :step="$clicks" class="mt-2" />
-
-<!--
-（約 25 秒）
-這頁是公司電腦的裝置身分怎麼傳到 PEP。電腦連線時要出示裝置憑證，由 gateway 負責驗證。
-
-[click] 驗過之後，gateway 把憑證資訊寫進 header 傳給 PEP，使用者自己塞的會先被丟掉。
-
-[click] PEP 確認這個 header 真的是 gateway 給的，再從裡面取出裝置名稱。
-
-[click] 最後 PE 用裝置名稱查這台電腦的狀態，決定要不要放行。
--->
 
 ---
 clicks: 5
