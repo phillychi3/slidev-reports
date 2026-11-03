@@ -34,8 +34,8 @@ GKE · Cloud Service Mesh · passkey
 
 <!--
 （約 15 秒）
-大家好，這次是零信任存取原型的第二版。情境不變：借一台別人的電腦，不裝東西、不輸入密碼，用手機上的 passkey 登入。
-差別是這次改依 NIST SP 800-207A，平台也從單台主機的 docker-compose 換成 GCP 上的 Kubernetes 加 service mesh。
+大家好，這次要報告的是我們零信任原型的第二版。情境一樣：借一台別人的電腦，不用裝東西、也不用打密碼，拿手機的 passkey 就能登入。
+這版改照 NIST 800-207A 來做，平台也從一台主機跑 docker-compose，搬到 GCP 的 Kubernetes，再加上 service mesh。
 -->
 
 
@@ -51,15 +51,16 @@ class: compact
 
 <!--
 （約 60 秒）
-這是 GKE 上的實際部署。左邊是客戶端，中間 zt-gateway 是唯一對外的入口，zt-system 是控制平面，右邊兩個應用各自在自己的 namespace。每個 workload 旁邊都注入一個 Envoy sidecar，就是方塊左邊的綠條；服務本身只講純 HTTP，加密、雙向驗證和授權都由 sidecar 處理。每個 workload 有自己的 ServiceAccount，就是它的 SPIFFE 身分，憑證由 Google 代管的 Mesh CA 簽發、自動輪替。
+先看整個架構。左邊是使用者，中間的 zt-gateway 是唯一對外的大門，zt-system 放控制平面，右邊兩個應用各自住在自己的 namespace。
+重點是每個服務旁邊都掛了一個 Envoy sidecar，就是那條綠條。服務本身只講 HTTP，加密、驗身分、授權都交給 sidecar。每個服務的 ServiceAccount 就是它的身分證，憑證由 Google 簽、自動換。
 
-[click] 入口：GCP 的 L4 load balancer 後面是 Istio ingress gateway。公開網域不收用戶端憑證，所以借用電腦一律是未受管理裝置；受管理電腦走 device 子網域，gateway 用 TLS MUTUAL 驗證裝置憑證，再把憑證資訊放在 XFCC header 交給 PEP。/auth 直接轉給 Keycloak。
+[click] 入口這邊：一般網域不收憑證，借來的電腦一律當成「沒受管理」；公司配的電腦走 device 子網域，要先拿出裝置憑證才進得來。
 
-[click] 控制平面：流程跟上一版一樣，PEP 問 PA，PA 問 PE，PE 查 Redis。差別是每一跳都經過 sidecar 的 mTLS，而且有一條 AuthorizationPolicy 規定誰能打誰的哪個路徑，例如只有 pa 能 POST /decide。
+[click] 控制平面的流程跟上一版一樣，PEP 問 PA、PA 再問 PE。差別是現在每一跳都是 mTLS，而且有規則管「誰能打誰」，像是只有 PA 能叫 PE 做決策。
 
-[click] 資料平面：PEP 轉發時簽一張使用者聲明 X-ZT-Assertion，資源前面的 sidecar 驗證來源是 PEP 的身分、而且聲明有效。lithium 連不到 yass：身分層的出站限制和網路層都會擋。
+[click] 資料平面這邊，PEP 放行的時候會簽一張「使用者聲明」帶過去，資源前面的 sidecar 會檢查這張聲明。
 
-[click] 依保護等級上色：每一條服務間連線都是雙向驗證的 mTLS，藍色的幾條還多了使用者聲明。唯一的例外是申請 Let's Encrypt 憑證時的 ACME 驗證，圖上沒畫。
+[click] 簡單講，圖上每一條線都是雙向驗證的 mTLS，藍色那幾條還多帶了一張使用者聲明。
 -->
 
 ---
@@ -72,16 +73,16 @@ class: compact
 <RequestFlow :step="$clicks" />
 
 <!--
-（約 45 秒）
-以 Lithium 的一個 API 請求為例。瀏覽器經 gateway 到 PEP，gateway 到 PEP 這段已經是 mTLS。PEP 先看 XFCC 最後一段是不是 gateway 的身分，再查 session、比對裝置指紋。
+（約 30 秒）
+這頁是一個請求從進來到拿到資料的過程。瀏覽器的請求經過 gateway 到 PEP，PEP 先確認使用者和裝置。
 
-[click] PEP 送 AccessContext 給 PA，PA 轉給 PE。這兩跳 sidecar 都會驗證對方身分，AuthorizationPolicy 只允許 pep 打 /access、只允許 pa 打 /decide。
+[click] 接著 PEP 去問 PA，PA 再問 PE：這個人現在能不能存取。
 
-[click] PE 的判斷完全沿用上一版：查威脅情資、評估 8 項條件，PA 記錄 grants 和稽核事件。
+[click] PE 做判斷，PA 把結果記下來。
 
-[click] 拒絕就回 403。允許時是這次新增的部分：PEP 簽一張使用者聲明，ES256、audience 是 media、60 秒，跟 X-ZT-User 一起轉發，並刪掉 Cookie、Authorization 和 XFCC。
+[click] 不行就回 403；可以的話，PEP 簽一張使用者聲明，跟著請求一起轉給資源。
 
-[click] 資源前的 sidecar 驗證來源是 sa/pep，聲明的簽章、issuer、audience、效期都有效才放行。nginx 再轉給後端時，後端的 sidecar 會再驗一次。
+[click] 資源那邊先驗這張聲明，沒問題才回資料。
 -->
 
 ---
@@ -145,22 +146,22 @@ spec:
 </div>
 
 <!--
-（約 40 秒）
-左邊是 PEP 簽的聲明，右邊是 YASS 這個 namespace 的 sidecar 政策。
+（約 30 秒）
+這頁看那張聲明長什麼樣子，還有資源端怎麼檢查它。
 
-[click] audience 綁定資源名稱，所以拿 media 的聲明去打 YASS 會被拒絕。
+[click] 它寫了這張聲明是給哪個資源用的，
 
-[click] roles 從 Keycloak token 帶過來，資源端可以自己再檢查一次。
+[click] 使用者有哪些角色，
 
-[click] 效期 60 秒，而且不超過登入效期；jti 每個請求不同。
+[click] 還有很短的有效期，只有 60 秒。
 
-[click] 右邊第一段是 RequestAuthentication：issuer 必須是 zt-pep、audience 必須是 status，用內嵌的公鑰驗簽章，而且只看 x-zt-assertion 這個 header。
+[click] 資源端先確認這張聲明真的是 PEP 簽的，
 
-[click] 第二段是授權：上一跳的 mTLS 身分必須是 PEP 的 ServiceAccount，
+[click] 再確認請求是從 PEP 來的，
 
-[click] 而且要帶一張驗證通過的聲明，
+[click] 有帶聲明，
 
-[click] 聲明裡的 roles 還要有 admin。這等於 PE 判斷完之後，資源端再獨立判斷一次；就算 PE 被誤設成允許，沒有 admin 還是進不去。
+[click] 而且角色要是 admin 才放行。也就是說，資源自己會再把關一次。
 -->
 
 ---
@@ -173,14 +174,14 @@ class: compact
 <DeviceFlow :step="$clicks" class="mt-2" />
 
 <!--
-（約 30 秒）
-裝置身分還是 X.509 憑證，但 TLS 現在在 gateway 終結，PEP 拿不到原始憑證。受管理電腦連 device 子網域，gateway 用裝置 CA 驗證憑證，沒有憑證握手就失敗。
+（約 25 秒）
+這頁是公司電腦的裝置身分怎麼傳到 PEP。電腦連線時要出示裝置憑證，由 gateway 負責驗證。
 
-[click] gateway 設成 SANITIZE_SET：先丟掉用戶端自己送來的 XFCC，只寫入它驗證過的憑證 Hash 和 Subject，再用 mTLS 送給 pep-managed。
+[click] 驗過之後，gateway 把憑證資訊寫進 header 傳給 PEP，使用者自己塞的會先被丟掉。
 
-[click] PEP 這邊的 sidecar 會在 XFCC 最後附上上一跳的 SPIFFE ID。PEP 只在最後一段是 gateway 時，才採信前面的裝置資訊和來源 IP；這段邏輯在 mesh.go 的 meshIdentity。
+[click] PEP 確認這個 header 真的是 gateway 給的，再從裡面取出裝置名稱。
 
-[click] 之後跟上一版一樣，PE 用裝置名稱查 CDM 狀態。實測時，pep-managed 從 XFCC 拿到的指紋和本機 openssl 算出來的一致；公開入口帶假的 XFCC 仍然是未受管理裝置。
+[click] 最後 PE 用裝置名稱查這台電腦的狀態，決定要不要放行。
 -->
 
 ---
@@ -198,17 +199,17 @@ class: compact
 
 <!--
 （約 60 秒）
-這些是在叢集裡實際打出來的結果。第一個是正常路徑：PEP 的身分加上 media 聲明，兩層都放行，200。
+最後是實測，都是在叢集裡真的打出來的。第一個是正常情況，兩層都放行，回 200。
 
-[click] 假設 Lithium 的 nginx 被攻陷，它偽造 X-ZT-User: bob 去打後端。網路層放行，因為 nginx 本來就該連後端；但身分層要求一張 PEP 簽的聲明，沒有就 403。如果資源只看 X-ZT-User，這一步就會成功。
+[click] 假設 Lithium 的 nginx 被攻破了，它假裝自己是 bob 去打後端。網路層會放行，因為 nginx 本來就能連後端；但身分層要 PEP 簽的聲明，拿不出來就 403。
 
-[click] 測試 pod 用 default 身分，但貼上 app=pe 的標籤去連 Redis。網路層是看標籤的，被騙過了；身分層看的是 SPIFFE 身分，連線被關閉。
+[click] 再來，測試 pod 偷貼上 PE 的標籤去連 Redis。網路層只看標籤，所以被騙過了；但身分層看的是真正的身分，連線直接被切掉。
 
-[click] PEP 身分加上 status 聲明，但 roles 沒有 admin：身分層的 claims 條件擋下。這代表 PE 就算誤判，資源端仍然擋得住。
+[click] 這個是帶了 PEP 的身分跟聲明，但角色不是 admin，身分層一樣擋下來。
 
-[click] 沒有 sidecar 的 pod 想直接連後端：封包根本到不了 sidecar，網路層就丟掉了，逾時。這是身分層被繞過時，網路層存在的理由。
+[click] 那如果有 pod 根本沒裝 sidecar 呢？身分層管不到它，就換網路層把封包丟掉，這就是兩層都要有的原因。
 
-[click] 最後是橫向移動：從 lithium 連 YASS，身分層的出站限制和網路層各自都會擋。
+[click] 最後是橫向移動：從 lithium 想連 YASS，兩層各自都會擋。
 -->
 
 ---
@@ -228,5 +229,5 @@ https://zt.cloudowo.com
 
 <!--
 （約 5 秒）
-以上，謝謝大家，有問題歡迎提問。
+以上就是這次的報告，謝謝大家，有問題歡迎提問。
 -->

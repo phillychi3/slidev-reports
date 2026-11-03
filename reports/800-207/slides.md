@@ -11,7 +11,7 @@ drawings:
   persist: false
 transition: slide-left
 mdc: true
-duration: 6min
+duration: 5min
 fonts:
   sans: Noto Sans TC
   serif: Noto Serif TC
@@ -33,9 +33,9 @@ fonts:
 
 <!--
 （約 15 秒）
-大家好，今天介紹的是一個依照 NIST SP 800-207 做的零信任存取原型。
-情境是：借一台別人的電腦，不裝任何東西、不輸入任何密碼，只用自己手機上的 passkey 登入，然後系統要決定這台電腦能碰哪些資源。
-這次依照上次會議的意見，補上了詳細架構和資料交換的細節。
+大家好，今天要分享的是我們照 NIST SP 800-207 做的零信任存取原型。
+情境很簡單：你跟別人借一台電腦，什麼都不裝、也不打密碼，只用自己手機上的 passkey 登入，然後由系統決定這台電腦可以碰哪些東西。
+這次也照上次會議的建議，把架構跟資料交換的細節補進來了。
 -->
 
 ---
@@ -66,14 +66,14 @@ clicks: 3
 </div>
 
 <!--
-（約 30 秒）
-800-207 的核心是：不因為你在哪個網路就信任你，每一次存取都要重新判斷。
+（約 25 秒）
+800-207 最核心的觀念就一句話：不會因為你在哪個網路就相信你，每一次存取都要重新檢查。
 
-[click] 它把系統切成兩個平面。資料平面上，使用者只能透過 PEP 碰到資源；控制平面上，PE 負責做決策，PA 負責把決策變成「開」或「關」。
+[click] 它把系統拆成兩層。使用者只能透過 PEP 碰到資源，後面由 PE 判斷、PA 負責開關。
 
-[click] PE 做決策時會參考各種 PIP：裝置狀態、威脅情資、存取政策、身分管理。
+[click] PE 判斷的時候，會參考裝置狀態、威脅情資這些資訊來源，叫做 PIP。
 
-[click] 在我們的專案裡，PEP、PA、PE 是用 Go 自己實作的，身分交給 Keycloak，裝置狀態跟威脅情資放在 Redis，這部分是模擬資料。
+[click] 我們的 PEP、PA、PE 都是自己用 Go 寫的，登入交給 Keycloak，威脅情資放在 Redis，是模擬的資料。
 -->
 
 ---
@@ -86,16 +86,16 @@ class: compact
 <ArchDetail :step="$clicks" />
 
 <!--
-（約 55 秒）
-這是實際部署的元件和網段。左邊是客戶端，上面是對外的 untrusted 網段，下面是 internal 的控制平面，右邊兩個應用各自在獨立的 enclave：上面是影音庫 Lithium Player，下面是伺服器狀態 YASS。Keycloak 和 PEP 跨在網段邊界上，代表同時接在兩個網段。
+（約 45 秒）
+這張是實際部署的樣子。上面是對外網段，下面是內部的控制平面，右邊兩個應用各自關在獨立的區域：影音庫 Lithium 跟伺服器狀態 YASS。
 
-[click] 公開入口：瀏覽器用公開 CA 的 HTTPS 連到 Caddy。Caddy 再用 step-ca 簽的憑證連 PEP，而且會驗證主機名稱是 pep。Caddy 不轉送用戶端憑證，所以借用電腦一律是未受管理裝置。/auth 轉給 Keycloak。手機跟借用電腦之間是 WebAuthn 的跨裝置通道，不經過伺服器網路。
+[click] 入口的部分，瀏覽器走 HTTPS 進 Caddy，再轉給 PEP。借來的電腦沒有裝置憑證，所以一律當成未受管理的裝置。
 
-[click] 控制平面：每個請求 PEP 把 AccessContext 送給 PA，PA 轉給 PE，PE 到 Redis 查威脅情資。PA 把授權和稽核事件寫進 Redis，撤銷則透過 pub/sub 通知 PEP。PEP 也在內部跟 Keycloak 換 token、拿 JWKS。威脅情資由管理者用 redis-cli 寫入，是模擬資料。
+[click] 控制平面就是 PEP 問 PA、PA 問 PE，授權結果跟稽核紀錄都存在 Redis。
 
-[click] 資料平面：只有 PEP 同時接上兩個 enclave，它轉發時寫入 X-ZT-User，Lithium 和 YASS 都直接用這個 header 認人，不用自己的登入頁。這能成立，是因為 enclave 只有 PEP 進得來。YASS 的三台 agent 在 enclave 內用各自的主機 token 回報，不經 PEP。微分段：lithium 連得到自己的後端，但連不到 yass，連名稱都解析不到。
+[click] 資料平面的重點是，只有 PEP 進得去這兩個應用。所以 PEP 直接用一個 header 告訴應用「這個人是誰」，應用就不用自己做登入。
 
-[click] 最後依連線保護等級上色：綠色是有 TLS 而且驗證對端；橘色是 HTTP 但靠 token 驗證，例如 PEP 到 Keycloak 的 token 有簽章、agent 帶主機 token；紅色是控制平面和 enclave 內部，目前只靠網段隔離，這是已知限制。
+[click] 顏色代表連線的保護程度：綠色有 TLS，橘色靠 token 驗證，紅色只靠網段隔離，這是目前已知的限制。
 -->
 
 
@@ -109,16 +109,16 @@ class: compact
 <LoginFlow :step="$clicks" />
 
 <!--
-（約 50 秒）
-第一段，PEP 發現沒有 session，先導向自己的 /_zt/login，在這裡產生 state、nonce、PKCE verifier，然後把 state 寫進登入 cookie，再導到 Keycloak。
+（約 30 秒）
+先看登入。沒有 session 的話，PEP 會把你導去 Keycloak。
 
-[click] 授權請求帶 client_id、code_challenge、nonce，還有 prompt=login，每次都要互動驗證。Keycloak 只問帳號，接著發 WebAuthn challenge，綁定展示網域。
+[click] Keycloak 只問帳號、不問密碼，直接要求 passkey。
 
-[click] 借用電腦顯示 QR code，手機掃描並用藍牙確認在附近；手機做使用者驗證後用私鑰簽章，Keycloak 用公鑰驗章。
+[click] 電腦跳出 QR code，用手機掃、解鎖，手機簽名後交給 Keycloak 驗證。
 
-[click] Keycloak 帶授權碼導回 PEP 的 callback。PEP 檢查登入 cookie 等於 state，確保完成登入的是同一個瀏覽器，這可以防 login CSRF。
+[click] 接著回到 PEP，PEP 確認完成登入的是同一個瀏覽器。
 
-[click] PEP 在容器內部用 client secret 加 code_verifier 換 token，驗簽章、iss、aud、nonce、azp，最後發 session cookie。
+[click] 最後 PEP 跟 Keycloak 換到 token、驗證過，就發 session 給你。
 -->
 
 
@@ -133,16 +133,16 @@ class: compact
 <RequestFlow :step="$clicks" />
 
 <!--
-（約 45 秒）
-登入後的每一個請求，這裡以 Lithium 的 API 請求為例，播放、換歌都是一個個 API 請求。PEP 先查 session，沒有或已過期就導向登入，連 PA 都不問。
+（約 25 秒）
+登入之後，每一個請求都會走這條路。PEP 先檢查 session，沒有就請你重新登入。
 
-[click] 通過後 PEP 組出 AccessContext 送 PA，PA 原封不動轉給 PE。
+[click] 有的話，PEP 把請求資訊交給 PA，PA 再去問 PE。
 
-[click] PE 到 Redis 查威脅情資，然後依序評估 8 項條件，全部列在 checks 裡回傳。
+[click] PE 把 8 項條件跑一遍，把結果回傳。
 
-[click] PA 依結果更新授權：允許就 SADD grants，拒絕就 SREM，並把這筆決策寫進稽核 stream，再回給 PEP。
+[click] PA 依結果更新授權，順便記一筆稽核紀錄。
 
-[click] 允許時 PEP 轉發，並且刪掉 Cookie 和 Authorization，改加 X-ZT-User；Lithium 後端就用這個 header 認出是 alice，第一次出現時自動建帳號，所以不會看到 Lithium 自己的登入頁。拒絕就回 403 並顯示原因。PEP 不快取任何授權。
+[click] 允許就轉給應用，不允許就回 403。而且 PEP 不記結果，每次都重新問。
 -->
 
 ---
@@ -200,20 +200,20 @@ class: compact
 </div>
 
 <!--
-（約 40 秒）
-這是 PEP、PA、PE 之間實際傳的兩個 JSON。
+（約 25 秒）
+這頁是 PEP、PA、PE 之間實際傳的資料。左邊是 PEP 送出去的請求資訊。
 
-[click] session_id 是 64 字元的隨機值，它就是 bearer cookie，所以只在 PEP 和 PA 之間傳，稽核事件只保留前 12 碼。
+[click] 裡面有 session，只在內部傳。
 
-[click] 裝置身分是憑證的 CN 和指紋。借用電腦沒有憑證，所以兩個都是空的，PE 就知道這是未受管理裝置。
+[click] 有使用者角色跟裝置資訊，借來的電腦裝置這兩格是空的。
 
-[click] source_ip 是 PEP 實際看到的 TCP 對端，不信任 X-Forwarded-For；公開入口看到的是 Caddy 的 IP。
+[click] 有來源 IP，
 
-[click] expires_at 不超過 token 效期，PE 每次都會檢查。
+[click] 還有過期時間。
 
-[click] Decision 這邊，allow 和 reason 給 PEP 用。
+[click] 右邊是 PE 的回覆：能不能過、為什麼。
 
-[click] checks 列出全部 8 項。裝置身分通過，因為 status 允許未受管理裝置；CDM 是 skip，因為沒有憑證就沒有東西可以查；最後角色失敗，alice 不是 admin，reason 就取這個失敗的條件。
+[click] 8 項結果都會列出來，這個例子是卡在角色，因為 alice 不是 admin。
 -->
 
 ---
@@ -230,15 +230,15 @@ class: compact
 <PolicyEngine :step="$clicks" />
 
 <!--
-（約 35 秒）
-PE 依序評估 8 項條件，資料來源標在第三欄。兩個應用都允許未受管理裝置，所以借用電腦的裝置身分會通過，裝置狀態（CDM）略過。
-第一個情境：alice 開影音庫 media，任何已驗證使用者都可以，允許。
+（約 30 秒）
+這頁把 8 項條件跟每一項的資料來源都列出來了，我們直接看幾個情境。
+第一個，alice 開影音庫，只要有登入就可以，通過。
 
-[click] alice 開伺服器狀態 status：status 要 admin，第八項角色失敗，403。
+[click] alice 改開伺服器狀態，這個要 admin，卡在角色這關，403。
 
-[click] bob 是 admin，同一台借用電腦開 status 就允許。差別只在角色。
+[click] 換成有 admin 的 bob，用同一台電腦開就過了，差別就只在角色。
 
-[click] alice 被列進風險名單：第五項威脅情資帳號失敗，連 media 都進不去。任何 PIP 查詢失敗，也一律拒絕。
+[click] 最後把 alice 放進風險名單，威脅情資那關直接擋下來，連影音庫都進不去。另外只要任何一個資料來源查不到，也是一律拒絕。
 -->
 
 ---
@@ -254,16 +254,16 @@ PEP <b>不快取授權</b>：撤銷通知只是加速，真正的保證是「下
 </div>
 
 <!--
-（約 30 秒）
-授權不是一次性的。管理者把 alice 加進風險名單，
+（約 25 秒）
+最後是撤銷。假設管理者把 alice 加進風險名單，
 
-[click] Redis 發出 keyspace 通知，PA 先記一筆 PIP 變動事件。
+[click] Redis 會馬上通知 PA。
 
-[click] PA 把所有 session 已授權的資源重新問一次 PE；另外每 30 秒也會定期重新評估。
+[click] PA 把已經給出去的授權再拿去問 PE 一次。
 
-[click] PE 拒絕，PA 移除 grant、發 pub/sub 通知 PEP，並記一筆撤銷事件，裡面含 8 項 checks。
+[click] PE 說不行，PA 就收回授權、通知 PEP。
 
-[click] alice 重新整理 /media/ 就拿到 403，之後的 API 請求和換歌也都被拒。PEP 不快取授權，就算通知沒送到，下一個請求也會被擋。不過已經下載到瀏覽器的那首歌還是能播完，這是撤銷的限制。
+[click] alice 下一個請求就是 403。就算通知沒送到也沒關係，PEP 本來就每次都重新問；不過已經在下載的東西不會被中斷。
 -->
 
 ---
@@ -287,5 +287,5 @@ https://zt.cloudowo.com
 
 <!--
 （約 5 秒）
-以上，謝謝大家。後面附錄有上次會議兩個提問的回答，有問題歡迎提問。
+以上就是我們的報告，謝謝大家。後面附錄是上次兩個提問的回答，有問題歡迎再問。
 -->
