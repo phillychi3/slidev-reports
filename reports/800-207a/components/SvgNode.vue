@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// SVG 圖表裡的一個方塊：主標題、副標題、右上角的 800-207 角色標籤
-defineProps<{
+// SVG 圖表裡的一個方塊：主標題、副標題、右上角的 800-207 角色標籤、左側的 sidecar 條
+const props = defineProps<{
   x: number
   y: number
   w: number
@@ -11,21 +11,26 @@ defineProps<{
   color: string
   active?: boolean
   dim?: boolean
+  sidecar?: boolean
 }>()
+
+// 有 sidecar 時文字往右讓出左側的條
+const cx = () => props.x + props.w / 2 + (props.sidecar ? 5 : 0)
 </script>
 
 <template>
   <g class="svg-node" :class="{ active, dim }" :style="{ '--c': color }">
     <rect :x="x" :y="y" :width="w" :height="h" rx="10" class="box" />
+    <rect v-if="sidecar" :x="x + 4" :y="y + 6" width="7" :height="h - 12" rx="3.5" class="sidecar" />
     <text
-      :x="x + w / 2"
+      :x="cx()"
       :y="sub ? y + h / 2 - 3 : y + h / 2 + 5"
       text-anchor="middle"
       class="label"
     >{{ label }}</text>
     <text
       v-if="sub"
-      :x="x + w / 2"
+      :x="cx()"
       :y="y + h / 2 + 15"
       text-anchor="middle"
       class="sub"
@@ -44,6 +49,10 @@ defineProps<{
   stroke: var(--c);
   stroke-width: 1.5;
   transition: fill 0.35s, stroke-width 0.35s;
+}
+
+.sidecar {
+  fill: var(--zt-allow);
 }
 
 .label {

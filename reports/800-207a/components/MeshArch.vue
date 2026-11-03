@@ -13,21 +13,21 @@ const nodes = [
   { id: 'laptop', x: 16, y: 172, w: 126, h: 46, label: '受管理電腦', sub: '裝置憑證 laptop1', color: 'var(--zt-res)' },
   { id: 'meshca', x: 16, y: 300, w: 126, h: 54, label: 'Mesh CA', sub: '代管控制平面', tag: 'PKI', color: 'var(--zt-pip)' },
   { id: 'gw', x: 178, y: 96, w: 114, h: 60, label: 'ingress gw', sub: 'L4 LB → Envoy', tag: 'PEP', color: 'var(--zt-pep)' },
-  { id: 'keycloak', x: 332, y: 28, w: 120, h: 50, label: 'Keycloak', sub: 'passkey · OIDC', tag: 'IdP', color: 'var(--zt-idp)' },
-  { id: 'pep', x: 520, y: 28, w: 148, h: 50, label: 'PEP', sub: 'pep · pep-managed', tag: 'PEP', color: 'var(--zt-pep)' },
-  { id: 'pa', x: 534, y: 160, w: 120, h: 50, label: 'PA', sub: '/access', tag: 'PA', color: 'var(--zt-ctrl)' },
-  { id: 'pe', x: 332, y: 300, w: 120, h: 50, label: 'PE', sub: '/decide', tag: 'PE', color: 'var(--zt-ctrl)' },
-  { id: 'redis', x: 534, y: 300, w: 120, h: 50, label: 'Redis', sub: 'PIP · session · 事件', tag: 'PIP', color: 'var(--zt-pip)' },
+  { id: 'keycloak', x: 332, y: 28, w: 120, h: 50, label: 'Keycloak', sub: 'passkey · OIDC', tag: 'IdP', sidecar: true, color: 'var(--zt-idp)' },
+  { id: 'pep', x: 520, y: 28, w: 148, h: 50, label: 'PEP', sub: 'pep · pep-managed', tag: 'PEP', sidecar: true, color: 'var(--zt-pep)' },
+  { id: 'pa', x: 534, y: 160, w: 120, h: 50, label: 'PA', sub: '/access', tag: 'PA', sidecar: true, color: 'var(--zt-ctrl)' },
+  { id: 'pe', x: 332, y: 300, w: 120, h: 50, label: 'PE', sub: '/decide', tag: 'PE', sidecar: true, color: 'var(--zt-ctrl)' },
+  { id: 'redis', x: 534, y: 300, w: 120, h: 50, label: 'Redis', sub: 'session · 事件', tag: 'PIP', sidecar: true, color: 'var(--zt-pip)' },
   // zt-media：Lithium Player
-  { id: 'lithium', x: 715, y: 30, w: 120, h: 46, label: 'lithium', sub: 'nginx 入口', color: 'var(--zt-res)' },
-  { id: 'l-web', x: 860, y: 22, w: 124, h: 40, label: 'lithium-web', sub: 'SvelteKit', color: 'var(--zt-res)' },
-  { id: 'l-api', x: 860, y: 82, w: 124, h: 40, label: 'lithium-api', sub: 'FastAPI', color: 'var(--zt-res)' },
-  { id: 'l-db', x: 860, y: 142, w: 124, h: 40, label: 'lithium-db', sub: 'Postgres', color: 'var(--zt-res)' },
+  { id: 'lithium', x: 715, y: 30, w: 120, h: 46, label: 'lithium', sub: 'nginx 入口', sidecar: true, color: 'var(--zt-res)' },
+  { id: 'l-web', x: 860, y: 22, w: 124, h: 40, label: 'lithium-web', sub: 'SvelteKit', sidecar: true, color: 'var(--zt-res)' },
+  { id: 'l-api', x: 860, y: 82, w: 124, h: 40, label: 'lithium-api', sub: 'FastAPI', sidecar: true, color: 'var(--zt-res)' },
+  { id: 'l-db', x: 860, y: 142, w: 124, h: 40, label: 'lithium-db', sub: 'Postgres', sidecar: true, color: 'var(--zt-res)' },
   // zt-status：YASS
-  { id: 'yass', x: 715, y: 290, w: 120, h: 50, label: 'yass', sub: 'SvelteKit + actix', color: 'var(--zt-res)' },
-  { id: 'ag-1', x: 860, y: 244, w: 124, h: 40, label: 'web-01', sub: 'yass-agent', color: 'var(--zt-res)' },
-  { id: 'ag-2', x: 860, y: 304, w: 124, h: 40, label: 'db-01', sub: 'yass-agent', color: 'var(--zt-res)' },
-  { id: 'ag-3', x: 860, y: 364, w: 124, h: 40, label: 'build-01', sub: 'yass-agent', color: 'var(--zt-res)' },
+  { id: 'yass', x: 715, y: 290, w: 120, h: 50, label: 'yass', sub: 'SvelteKit + actix', sidecar: true, color: 'var(--zt-res)' },
+  { id: 'ag-1', x: 860, y: 244, w: 124, h: 40, label: 'web-01', sub: 'yass-agent', sidecar: true, color: 'var(--zt-res)' },
+  { id: 'ag-2', x: 860, y: 304, w: 124, h: 40, label: 'db-01', sub: 'yass-agent', sidecar: true, color: 'var(--zt-res)' },
+  { id: 'ag-3', x: 860, y: 364, w: 124, h: 40, label: 'build-01', sub: 'yass-agent', sidecar: true, color: 'var(--zt-res)' },
 ]
 
 interface Edge {
@@ -85,7 +85,7 @@ const activeNodes: Record<number, string[]> = {
 }
 
 const captions = [
-  '<b>四個 namespace 各是一個信任區</b>；每個 workload 有自己的 ServiceAccount ＝ SPIFFE 身分，憑證由代管 Mesh CA 簽發、自動輪替',
+  '<b>四個 namespace 各是一個信任區</b>；每個 workload 旁注入 Envoy sidecar，以自己的 ServiceAccount ＝ SPIFFE 身分做 mTLS，憑證由代管 Mesh CA 簽發、自動輪替',
   '<b>入口</b>：只有 ingress gateway 對外。公開網域不收用戶端憑證；裝置網域走 TLS MUTUAL，裝置資訊經 XFCC 交給 PEP',
   '<b>控制平面</b>：PEP → PA → PE → Redis 每一跳都是 sidecar 之間的 mTLS，再由 AuthorizationPolicy 檢查「誰 → 哪個方法／路徑」',
   '<b>資料平面</b>：PEP 對每個請求簽發 <code>X-ZT-Assertion</code>；資源前的 sidecar 驗證 SPIFFE 身分＋聲明。lithium 連不到 yass',
@@ -136,6 +136,12 @@ function edgeStyle(e: Edge) {
       <text x="986" y="204" text-anchor="end" class="zone-label ns-label">zt-media · Lithium Player</text>
       <rect x="700" y="224" width="296" height="212" rx="12" class="zone ns" />
       <text x="710" y="240" class="zone-label ns-label">zt-status · YASS</text>
+
+      <!-- 圖例：節點左側的綠條 = 注入的 Envoy sidecar；ingress gw 本身就是 Envoy，不另畫 -->
+      <rect x="170" y="254" width="24" height="26" rx="5" class="key-box" />
+      <rect x="174" y="258" width="6" height="18" rx="3" class="key-sidecar" />
+      <text x="200" y="265" class="key-text">Envoy sidecar</text>
+      <text x="200" y="279" class="key-text muted">mTLS · 授權執行點</text>
 
       <!-- 連線 -->
       <path
@@ -205,6 +211,25 @@ function edgeStyle(e: Edge) {
   font-size: 11px;
   fill: var(--zt-fg) !important;
   font-family: ui-monospace, monospace;
+}
+
+.key-box {
+  fill: none;
+  stroke: var(--zt-line);
+  stroke-width: 1.2;
+}
+
+.key-sidecar {
+  fill: var(--zt-allow);
+}
+
+.key-text {
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+}
+
+.key-text.muted {
+  fill: var(--zt-muted) !important;
 }
 
 .block {

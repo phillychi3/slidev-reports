@@ -51,7 +51,7 @@ class: compact
 
 <!--
 （約 60 秒）
-這是 GKE 上的實際部署。左邊是客戶端，中間 zt-gateway 是唯一對外的入口，zt-system 是控制平面，右邊兩個應用各自在自己的 namespace。每個 workload 有自己的 ServiceAccount，就是它的 SPIFFE 身分，憑證由 Google 代管的 Mesh CA 簽發、自動輪替。
+這是 GKE 上的實際部署。左邊是客戶端，中間 zt-gateway 是唯一對外的入口，zt-system 是控制平面，右邊兩個應用各自在自己的 namespace。每個 workload 旁邊都注入一個 Envoy sidecar，就是方塊左邊的綠條；服務本身只講純 HTTP，加密、雙向驗證和授權都由 sidecar 處理。每個 workload 有自己的 ServiceAccount，就是它的 SPIFFE 身分，憑證由 Google 代管的 Mesh CA 簽發、自動輪替。
 
 [click] 入口：GCP 的 L4 load balancer 後面是 Istio ingress gateway。公開網域不收用戶端憑證，所以借用電腦一律是未受管理裝置；受管理電腦走 device 子網域，gateway 用 TLS MUTUAL 驗證裝置憑證，再把憑證資訊放在 XFCC header 交給 PEP。/auth 直接轉給 Keycloak。
 
@@ -191,7 +191,7 @@ class: compact
 # 兩層政策實測：誰擋下了請求
 
 <div class="text-sm opacity-70 -mt-1 mb-3">
-2026-10-30 在 GKE 上從測試 pod 實際發出；按空白鍵切換情境，也可以直接點
+2026-10-30 在 GKE 上從測試 pod 實際發出
 </div>
 
 <TierProbe :step="$clicks" />
