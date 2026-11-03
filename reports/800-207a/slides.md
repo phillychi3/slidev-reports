@@ -220,7 +220,7 @@ class: text-center
 # 謝謝聆聽
 
 <div class="mt-6 font-mono opacity-70">
-https://zt.cloudowo.com
+https://34-80-103-100.sslip.io/
 </div>
 
 <div class="mt-2 text-sm opacity-50">
